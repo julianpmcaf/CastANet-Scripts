@@ -55,26 +55,34 @@ jobs:
           mkdir -p /tmp/docker_build
 
           if [ "${{ steps.meta.outputs.extension }}" = "zip" ]; then
-              unzip "${{ steps.meta.outputs.changed_file }}" -d /tmp/docker_build/
-              rm -rf /tmp/docker_build/__MACOSX
-              # Flatten if zip has a single top-level folder
-              ITEMS=$(ls /tmp/docker_build/ | wc -l)
-              SUBDIR=$(ls /tmp/docker_build/ | head -1)
-              if [ "$ITEMS" -eq 1 ] && [ -d "/tmp/docker_build/$SUBDIR" ]; then
-                shopt -s dotglob
-                mv /tmp/docker_build/$SUBDIR/* /tmp/docker_build/
-                rm -rf "/tmp/docker_build/$SUBDIR"
-              fi
-              # Use the project's own Dockerfile if it exists
-              if [ ! -f /tmp/docker_build/Dockerfile ]; then
-                cat > /tmp/docker_build/Dockerfile << 'EOF'
+            unzip "${{ steps.meta.outputs.changed_file }}" -d /tmp/docker_build/
+            rm -rf /tmp/docker_build/__MACOSX
+            ITEMS=$(ls /tmp/docker_build/ | wc -l)
+            SUBDIR=$(ls /tmp/docker_build/ | head -1)
+            if [ "$ITEMS" -eq 1 ] && [ -d "/tmp/docker_build/$SUBDIR" ]; then
+              shopt -s dotglob
+              mv /tmp/docker_build/$SUBDIR/* /tmp/docker_build/
+              rm -rf "/tmp/docker_build/$SUBDIR"
+            fi
+            if [ ! -f /tmp/docker_build/Dockerfile ]; then 
+            cat > /tmp/docker_build/Dockerfile << 'EOF' 
             FROM node:20-slim
             WORKDIR /app
             COPY . .
             RUN npm install --omit=dev
             CMD ["npm", "start"]
             EOF
-              fi
+            fi
+          else
+            cp "${{ steps.meta.outputs.changed_file }}" /tmp/docker_build/script.py
+            cat > /tmp/docker_build/Dockerfile << 'EOF'
+            FROM python:3.13-slim
+            WORKDIR /app
+            RUN pip install --no-cache-dir requests beautifulsoup4
+            COPY script.py .
+            CMD ["python", "script.py"]
+            EOF
+          fi
 
       - name: Build and push Docker image
         if: steps.meta.outputs.skip != 'true'
