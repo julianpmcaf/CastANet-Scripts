@@ -64,24 +64,12 @@ jobs:
               mv /tmp/docker_build/$SUBDIR/* /tmp/docker_build/
               rm -rf "/tmp/docker_build/$SUBDIR"
             fi
-            if [ ! -f /tmp/docker_build/Dockerfile ]; then 
-            cat > /tmp/docker_build/Dockerfile << 'EOF' 
-            FROM node:20-slim
-            WORKDIR /app
-            COPY . .
-            RUN npm install --omit=dev
-            CMD ["npm", "start"]
-            EOF
+            if [ ! -f /tmp/docker_build/Dockerfile ]; then
+              printf 'FROM node:20-slim\nWORKDIR /app\nCOPY . .\nRUN npm install --omit=dev\nCMD ["npm", "start"]\n' > /tmp/docker_build/Dockerfile
             fi
           else
             cp "${{ steps.meta.outputs.changed_file }}" /tmp/docker_build/script.py
-            cat > /tmp/docker_build/Dockerfile << 'EOF'
-            FROM python:3.13-slim
-            WORKDIR /app
-            RUN pip install --no-cache-dir requests beautifulsoup4
-            COPY script.py .
-            CMD ["python", "script.py"]
-            EOF
+            printf 'FROM python:3.13-slim\nWORKDIR /app\nRUN pip install --no-cache-dir requests beautifulsoup4\nCOPY script.py .\nCMD ["python", "script.py"]\n' > /tmp/docker_build/Dockerfile
           fi
 
       - name: Build and push Docker image
