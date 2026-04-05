@@ -56,12 +56,19 @@ jobs:
 
           if [ "${{ steps.meta.outputs.extension }}" = "zip" ]; then
             unzip "${{ steps.meta.outputs.changed_file }}" -d /tmp/docker_build/
+            # Move files out of subdirectory if zip contains a top-level folder
+            SUBDIR=$(ls /tmp/docker_build/ | head -1)
+            if [ -d "/tmp/docker_build/$SUBDIR" ] && [ "$SUBDIR" != "__MACOSX" ]; then
+              mv /tmp/docker_build/$SUBDIR/* /tmp/docker_build/ 2>/dev/null || true
+              rm -rf /tmp/docker_build/$SUBDIR
+            fi
+            rm -rf /tmp/docker_build/__MACOSX
             cat > /tmp/docker_build/Dockerfile << 'EOF'
-          FROM python:3.13-slim
+          FROM node:20-slim
           WORKDIR /app
           COPY . .
-          RUN if [ -f requirements.txt ]; then pip install --no-cache-dir -r requirements.txt; fi
-          CMD ["python", "src/main.py"]
+          RUN npm install --omit=dev
+          CMD ["npm", "start"]
           EOF
           else
             cp "${{ steps.meta.outputs.changed_file }}" /tmp/docker_build/script.py
