@@ -61,7 +61,7 @@ jobs:
           WORKDIR /app
           COPY . .
           RUN if [ -f requirements.txt ]; then pip install --no-cache-dir -r requirements.txt; fi
-          CMD ["python", "main.py"]
+          CMD ["python", "src/main.py"]
           EOF
           else
             cp "${{ steps.meta.outputs.changed_file }}" /tmp/docker_build/script.py
